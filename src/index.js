@@ -25,21 +25,26 @@ function is_empty(x, y){ return board[y][x] == 0; }
 // flagが1なら黒かどうか、-1なら白かどうかの判定関数。
 function is_bw(x, y, flag){ return board[y][x] == flag; }
 
-$(function(){
-     $("#myCanvas").click(function(e){
-          var area_offset = $("#myCanvas").offset();
-          var offset_top = ((e.pageY) - (area_offset.top));
-          var offset_left = ((e.pageX) - (area_offset.left));
-          var x = Math.floor(offset_left / 40);  // 0～7
-          var y = Math.floor(offset_top / 40); // 0～7
-          // (x, y)が置けるマスなら黒のチップが置かれる（予定）
-          // それによりコンピューターが白のチップを置く（予定）
-          // 置けなくなったら勝敗が表示される（予定）
-          var ctx = get_ctx();
-          ctx.drawImage(black, x * 40, y * 40);
-          console.log(board[x][y]);
-     });
-});
+// canvas要素にクリックイベントのリスナーを付与。
+document.getElementById("myCanvas").addEventListener("click", function(e){
+    var clickX = e.pageX;
+    var clickY = e.pageY;
+    var clientRect = this.getBoundingClientRect();
+    var positionX = clientRect.left + window.pageXOffset;
+    var positionY = clientRect.top + window.pageYOffset;
+    var x = clickX - positionX;
+    var y = clickY - positionY;
+    console.log(x);
+    console.log(y);
+    x = Math.floor(x / 40);  // 0～7
+    y = Math.floor(y / 40); // 0～7
+    // (x, y)が置けるマスなら黒のチップが置かれる（予定）
+    // それによりコンピューターが白のチップを置く（予定）
+    // 置けなくなったら勝敗が表示される（予定）
+    var ctx = get_ctx();
+    ctx.drawImage(black, x * 40, y * 40);
+    console.log(board[x][y]);
+})
 
 function drawboard(){
   var ctx = get_ctx()

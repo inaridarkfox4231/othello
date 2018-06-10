@@ -10,8 +10,8 @@ for(var i = 0; i < 8; i++){
 }
 // -1が白、+1が黒。
 board[3][3] = -1; board[4][3] = 1; board[3][4] = 1; board[4][4] = -1;
-var black = 2;
-var white = 2;
+var black_count = 2;
+var white_count = 2;
 
 function get_ctx(){
     // メイン関数（コンテクストの取得）

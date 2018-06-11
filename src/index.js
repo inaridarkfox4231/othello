@@ -9,7 +9,7 @@ floor.src = "./images/floor.png"; // ブランク
 var able = new Image();
 able.src = "./images/able.png";  // 設置可能
 var turnname = ["WHITE  TURN", "", "BLACK  TURN"];
-var winner = ["WHITE  WIN!!", "DRAW.", "BLACK  WIN!!"];
+var winner = ["WHITE  WIN!!", "DRAW.", "BLACK  WIN!!", "YOU  LOSE..", "DRAW.", "YOU  WIN!!"];
 
 var dx = [1, 1, 0, -1, -1, -1, 0, 1];  //x軸方向の走査
 var dy = [0, 1, 1, 1, 0, -1, -1, -1];  //y軸方向の走査
@@ -168,6 +168,7 @@ function show_winner(){
     var win = 1;
     if(count[2] > count[0]){ win = 2; }
     if(count[2] < count[0]){ win = 0; }
+    if(mode == 1){ win += 3; } //1Pモードの時はメッセージを変える。
     document.getElementById("turn").innerText = winner[win];
     count[1] = 1; // ゲーム終了のサイン。
 }
@@ -177,7 +178,7 @@ function mode_select(){
 }
 // 1P MODEをクリックする。
 document.getElementById("1P").addEventListener("click", function(e){
-    return;  //後で外す。
+    //return;  //後で外す。
     if(mode > 0){ return; }
     mode = 1; init();
     document.getElementById("2P").innerText = "";
@@ -192,31 +193,49 @@ document.getElementById("2P").addEventListener("click", function(e){
 document.getElementById("turn").addEventListener("click", function(e){
     if(count[1] == 0){ return; }  //flagが立ってない時は何も起きない。
     document.getElementById("turn").innerText = "SELECT  MODE";
-    if(mode == 1){
-        document.getElementById("2P").innerText = "2P MODE";
-    }else if(mode == 2){
-        document.getElementById("1P").innerText = "1P MODE";
-    }
+    document.getElementById("1P").innerText = "1P MODE";
+    document.getElementById("2P").innerText = "2P MODE";
     mode = 0;
 })
 function check_1P(){
-    //コンピュータのターン。終了したらこっちのターン。
-    return;
-    //ここで2Pモードなら以下の処理。1Pの場合はコンピュータが計算してset_stone
-    //したのちchange_turnして再びプレイヤーが石を置く。最後は（普通は）コンピュータが
-    //石を置いて勝敗が決まる。(x, y)は単純に一番石が増えるやつを選ぶ感じで。
+    if(hitlist.length > 0){
+        var ind = get_max();  // コンピュータ動ける
+        var x = hitlist[ind][0][0];
+        var y = hitlist[ind][0][1];
+        set_stone(x, y, hitlist[ind]);
+        change_turn();
+        if(hitlist.length > 0){
+            return; //こっちが動けるならこっちのターン
+        }else{
+            change_turn();  //こっちが動けないなら再びコンピュータ
+            if(hitlist.length > 0){ check_1P(); }
+        }  //コンピュータも動けないなら終了処理。
+    }else{
+        change_turn();  //コンピュータ動けないのでチェンジ
+        if(hitlist.length > 0){ return; } //こっちは動けるならこっちのターン
+    }  // こっちも動けないなら終了処理。
+    console.log("over.");
+    show_winner();
+}
+
+// hitlistは[]でないことが前提。コンピュータの手を決める。
+function get_max(){
+    var r = hitlist.length;
+    var ind = 0;
+    for(var i = 1; i < r; i++){
+        if(hitlist[ind].length < hitlist[i].length){ ind = i; }
+    }
+    return ind;
 }
 
 function check_2P(){
+    if(hitlist.length > 0){ return; }
     //置けなかった場合は再計算し}て同じターン
-    if(hitlist.length == 0){
-        change_turn();
-    }else{ return; }
+    change_turn();
+    if(hitlist.length > 0){ return; }
     //再び置けなかった場合は終了
-    if(hitlist.length == 0){
-        console.log("over.");
-        show_winner();
-    }
+    console.log("over.");
+    show_winner();
 }
 
 //ゲームの初期化。

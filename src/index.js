@@ -11,21 +11,27 @@ able.src = "./images/able.png";  // 設置可能
 var turnname = ["WHITE  TURN", "", "BLACK  TURN"];
 var winner = ["WHITE  WIN!!", "DRAW.", "BLACK  WIN!!"];
 
-function getImg(flag){
-    if(flag == 1){ console.log("黒"); return black; }
-    console.log("白");
-    return white;
-}
-
 var dx = [1, 1, 0, -1, -1, -1, 0, 1];  //x軸方向の走査
 var dy = [0, 1, 1, 1, 0, -1, -1, -1];  //y軸方向の走査
 var board = [];  // 盤面の状態を記録
 for(var i = 0; i < 8; i++){
     board.push([0, 0, 0, 0, 0, 0, 0, 0]);
 }
+
 // -1が白、+1が黒。
-board[3][3] = -1; board[4][3] = 1; board[3][4] = 1; board[4][4] = -1;
-var count = [2, 0, 2] // 1 + flagで各々の個数にアクセス。
+var count = [0, 0, 0] // 1 + flagで各々の個数にアクセス。count[1]はゲーム終了のフラグ。
+
+//hitlistは常に、その時の置ける石（黒か白）と、その石を置いたときの
+//色の変わり方を保持し、石を置くたびに再計算される。
+var hitlist = [];
+var flag_cur = 1;  // 先手は黒で固定。
+
+var mode = 0; //1が1Pモード、2が2Pモード。最初は0で盤面クリックしても何も起きない。
+
+function getImg(flag){
+    if(flag == 1){ return black; }
+    return white;
+}
 
 function get_ctx(){
     // メイン関数（コンテクストの取得）
@@ -83,13 +89,10 @@ function hitlist_all_bw(flag){
 }
 //これでlist[[x, y]]の中にある石が色の変わる石という形。
 
-//hitlistは常に、その時の置ける石（黒か白）と、その石を置いたときの
-//色の変わり方を保持し、石を置くたびに再計算される。
-var hitlist = hitlist_all_bw(1);
-var flag_cur = 1;
-
 // canvas要素にクリックイベントのリスナーを付与。
 document.getElementById("myCanvas").addEventListener("click", function(e){
+    //モード0なら何も起きない。
+    if(mode == 0){ return; }
     //クリック位置の計算
     var clickX = e.pageX;
     var clickY = e.pageY;
@@ -98,27 +101,35 @@ document.getElementById("myCanvas").addEventListener("click", function(e){
     var positionY = clientRect.top + window.pageYOffset;
     var x = clickX - positionX;
     var y = clickY - positionY;
-    console.log(x);
-    console.log(y);
     x = Math.floor(x / 40);  // 0～7
-    y = Math.floor(y / 40); // 0～7
+    y = Math.floor(y / 40);  // 0～7
 
-    // (x, y)が置けるマスなら黒の石が置かれる（予定）
-    // それによりコンピューターが白の石を置く（予定）
-    // 置けなくなったら勝敗が表示される（予定）
-    var temp = 0;
-    for(var i = 0; i < hitlist.length; i++){
-        if(x == hitlist[i][0][0] && y == hitlist[i][0][1]){
-            temp = i; break;
-        }
-        temp++;
-    }
-    if(temp == hitlist.length){ return; }
-    var sublist = hitlist[temp];
+    //クリック位置がableかどうか調べる関数（見つかったらその場所を返す）
+    var sublist = get_sublist(x, y);
+    if(sublist.length == 0){ return; }  //無ければreturn.
 
+    //石を置いて関連する石を変化させる
+    set_stone(x, y, sublist);
+    //ターン変更
+    change_turn();
+    if(mode == 1){ check_1P(); }
+    if(mode == 2){ check_2P(); }
+})
+
+//クリック位置がableかどうか調べてableならsublistを返す、無ければ[]を返す。
+function get_sublist(x, y){
+  for(var i = 0; i < hitlist.length; i++){
+      if(x == hitlist[i][0][0] && y == hitlist[i][0][1]){
+          return hitlist[i];
+      }
+  }
+  return [];
+}
+
+//(x, y)に石を置いてさらに他の石を変化させる処理。
+function set_stone(x, y, sublist){
     var ctx = get_ctx();
-    ctx.drawImage(getImg(flag_cur), x * 40, y * 40);
-
+    ctx.drawImage(getImg(flag_cur), x * 40, y * 40);  //(x, y)に石を置く。
     board[y][x] = flag_cur;
     count[1 + flag_cur] += 1;
     var s = sublist.length;
@@ -129,19 +140,7 @@ document.getElementById("myCanvas").addEventListener("click", function(e){
         count[1 + flag_cur] += 1;
         count[1 - flag_cur] -= 1;
     }
-    //ターン変更
-    change_turn();
-
-    //置けなかった場合は再計算して同じターン
-    if(hitlist.length == 0){
-        change_turn();
-    }else{ return; }
-    //再び置けなかった場合は終了
-    if(hitlist.length == 0){
-        console.log("over.");
-        show_winner();
-    }
-})
+}
 
 function show_able(){
     var ctx = get_ctx();
@@ -170,11 +169,69 @@ function show_winner(){
     if(count[2] > count[0]){ win = 2; }
     if(count[2] < count[0]){ win = 0; }
     document.getElementById("turn").innerText = winner[win];
+    count[1] = 1; // ゲーム終了のサイン。
 }
 
-function drawboard(){
-  var ctx = get_ctx()
-  ctx.drawImage(boardimage, 0, 0);
-  show_able();
-  document.getElementById("turn").innerText = turnname[1 + flag_cur];
+function mode_select(){
+    document.getElementById("turn").innerText = "SELECT  MODE";
+}
+// 1P MODEをクリックする。
+document.getElementById("1P").addEventListener("click", function(e){
+    return;  //後で外す。
+    if(mode > 0){ return; }
+    mode = 1; init();
+    document.getElementById("2P").innerText = "";
+})
+// 2P MODEをクリックする。
+document.getElementById("2P").addEventListener("click", function(e){
+    if(mode > 0){ return; }
+    mode = 2; init();
+    document.getElementById("1P").innerText = "";
+})
+// ゲーム終了時にturn表示位置をクリックする。
+document.getElementById("turn").addEventListener("click", function(e){
+    if(count[1] == 0){ return; }  //flagが立ってない時は何も起きない。
+    document.getElementById("turn").innerText = "SELECT  MODE";
+    if(mode == 1){
+        document.getElementById("2P").innerText = "2P MODE";
+    }else if(mode == 2){
+        document.getElementById("1P").innerText = "1P MODE";
+    }
+    mode = 0;
+})
+function check_1P(){
+    //コンピュータのターン。終了したらこっちのターン。
+    return;
+    //ここで2Pモードなら以下の処理。1Pの場合はコンピュータが計算してset_stone
+    //したのちchange_turnして再びプレイヤーが石を置く。最後は（普通は）コンピュータが
+    //石を置いて勝敗が決まる。(x, y)は単純に一番石が増えるやつを選ぶ感じで。
+}
+
+function check_2P(){
+    //置けなかった場合は再計算し}て同じターン
+    if(hitlist.length == 0){
+        change_turn();
+    }else{ return; }
+    //再び置けなかった場合は終了
+    if(hitlist.length == 0){
+        console.log("over.");
+        show_winner();
+    }
+}
+
+//ゲームの初期化。
+function init(){
+    var ctx = get_ctx()
+    ctx.drawImage(boardimage, 0, 0);
+    for(var i = 0; i < 8; i++){
+        for(var j = 0; j < 8; j++){
+            board[i][j] = 0;
+        }
+    } //↑↓ボードの初期化。
+    board[3][3] = -1; board[4][3] = 1; board[3][4] = 1; board[4][4] = -1;
+    count = [2, 0, 2]
+    flag_cur = 1;  // 先手は黒で固定。
+    hitlist = hitlist_all_bw(1);  //黒の置ける位置をサーチ。
+    show_able(); //置ける位置を表示。
+    document.getElementById("turn").innerText = turnname[1 + flag_cur];
 }

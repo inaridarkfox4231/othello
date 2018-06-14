@@ -140,6 +140,7 @@ function set_stone(x, y, sublist){
         count[1 + flag_cur] += 1;
         count[1 - flag_cur] -= 1;
     }
+    show_state();
 }
 
 function show_able(){
@@ -182,12 +183,14 @@ document.getElementById("1P").addEventListener("click", function(e){
     if(mode > 0){ return; }
     mode = 1; init();
     document.getElementById("2P").innerText = "";
+    show_state();
 })
 // 2P MODEをクリックする。
 document.getElementById("2P").addEventListener("click", function(e){
     if(mode > 0){ return; }
     mode = 2; init();
     document.getElementById("1P").innerText = "";
+    show_state();
 })
 // ゲーム終了時にturn表示位置をクリックする。
 document.getElementById("turn").addEventListener("click", function(e){
@@ -239,6 +242,11 @@ function check_2P(){
     //再び置けなかった場合は終了
     console.log("over.");
     show_winner();
+}
+
+// 石の数を表示する
+function show_state(){
+   document.getElementById("STATE").innerText = "BLACK:" + count[2].toString() + "　WHITE:" + count[0].toString()
 }
 
 //ゲームの初期化。

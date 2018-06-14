@@ -218,11 +218,14 @@ function check_1P(){
     show_winner();
 }
 
-// hitlistは[]でないことが前提。コンピュータの手を決める。
+// hitlistは[]でないことが前提。コンピュータの思考ルーチン。
+// これだと単純すぎるので、角を優先的に選ぶように変更する。
 function get_max(){
     var r = hitlist.length;
     var ind = 0;
     for(var i = 1; i < r; i++){
+        if(hitlist[ind] == (0, 0) || hitlist[ind] == (7, 7)){ ind = i; break; }
+        if(hitlist[ind] == (0, 7) || hitlist[ind] == (7, 0)){ ind = i; break; }
         if(hitlist[ind].length < hitlist[i].length){ ind = i; }
     }
     return ind;

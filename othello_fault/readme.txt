@@ -1,1 +1,1 @@
-othello‘‚«’¼‚»‚¤‚Æ‚µ‚ÄŽ¸”s
+othelloæ›¸ãç›´ãã†ã¨ã—ã¦å¤±æ•—ã€‚
